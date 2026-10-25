@@ -1,6 +1,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <math.h>
 
 typedef struct {
     SDL_Window *window; 
@@ -59,14 +60,27 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     state->current_time = SDL_GetTicks();
     state->delta_time = (state->current_time - state->last_time) / 1000.f;
     
+    float direction_x = 0.f;
+    float direction_y = 0.f;
+
     const float speed = 100.f;
     const float movement_speed = speed * state->delta_time;
     const bool* keyboard = SDL_GetKeyboardState(NULL);
 
-    if (keyboard[SDL_SCANCODE_W]) state->player_y -= movement_speed;
-    if (keyboard[SDL_SCANCODE_S]) state->player_y += movement_speed;
-    if (keyboard[SDL_SCANCODE_A]) state->player_x -= movement_speed;
-    if (keyboard[SDL_SCANCODE_D]) state->player_x += movement_speed;
+    if (keyboard[SDL_SCANCODE_W]) direction_y -= 1.f;
+    if (keyboard[SDL_SCANCODE_S]) direction_y += 1.f;
+    if (keyboard[SDL_SCANCODE_A]) direction_x -= 1.f;
+    if (keyboard[SDL_SCANCODE_D]) direction_x += 1.f;
+
+    float length = sqrtf((direction_x * direction_x) + (direction_y * direction_y));
+
+    if (length > 0.f) {
+        direction_x /= length;
+        direction_y /= length;
+    }
+
+    state->player_x += direction_x * movement_speed;
+    state->player_y += direction_y * movement_speed;
 
     // player square
     SDL_FRect rect = { state->player_x, state->player_y, 100.f, 100.f };
