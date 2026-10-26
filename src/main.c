@@ -1,12 +1,16 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3_image/SDL_image.h>
 #include <math.h>
 
 typedef struct {
     SDL_Window *window; 
     SDL_Renderer *renderer;
     float player_x, player_y;
+    SDL_Texture *player_texture;
+    int texture_width;
+    int texture_height;
     unsigned int last_time;
     unsigned int current_time;
     float delta_time;
@@ -25,7 +29,33 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     state->player_x = 0.f;
     state->player_y = 0.f;
 
+    state->texture_width = 0;
+    state->texture_height = 0;
+
     state->last_time = 0;
+
+    // player texture
+    SDL_Surface* loaded_surface = IMG_Load("assets/dog.png");
+    if (loaded_surface == NULL) {
+        SDL_Log("Couldn't load image: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+    
+    state->player_texture = SDL_CreateTextureFromSurface(state->renderer, loaded_surface);
+    if (state->player_texture == NULL) {
+        SDL_Log("Couldn't load texture: %s", SDL_GetError());
+
+        SDL_DestroySurface(loaded_surface);
+        loaded_surface = NULL;
+        
+        return SDL_APP_FAILURE;
+    }
+
+    state->texture_width = loaded_surface->w;
+    state->texture_height = loaded_surface->h;
+
+    SDL_DestroySurface(loaded_surface);
+    loaded_surface = NULL;
 
     *appstate = state;
 
@@ -82,10 +112,9 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     state->player_x += direction_x * movement_speed;
     state->player_y += direction_y * movement_speed;
 
-    // player square
-    SDL_FRect rect = { state->player_x, state->player_y, 100.f, 100.f };
-    SDL_SetRenderDrawColor(state->renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(state->renderer, &rect);
+    // player square with image texture
+    SDL_FRect rect = { state->player_x, state->player_y, (float)state->texture_width, (float)state->texture_height };
+    SDL_RenderTexture(state->renderer, state->player_texture, NULL, &rect);
 
     SDL_RenderPresent(state->renderer);
 
@@ -94,6 +123,13 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
-    SDL_free(appstate);
+    if (appstate != NULL) {
+        AppState* state = (AppState*)appstate;
+
+        SDL_DestroyTexture(state->player_texture);
+        state->player_texture = NULL;
+
+        SDL_free(state);
+    }
 }
 
