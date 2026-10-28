@@ -84,7 +84,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     // background
     SDL_SetRenderDrawColor(state->renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(state->renderer);
-
+    
     // player movement
     state->last_time = state->current_time;
     state->current_time = SDL_GetTicks();
@@ -93,7 +93,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     float direction_x = 0.f;
     float direction_y = 0.f;
 
-    const float speed = 100.f;
+    const float speed = 200.f;
     const float movement_speed = speed * state->delta_time;
     const bool* keyboard = SDL_GetKeyboardState(NULL);
 
@@ -111,6 +111,28 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 
     state->player_x += direction_x * movement_speed;
     state->player_y += direction_y * movement_speed;
+
+    // player collision with the screen
+    int screen_width = 0;
+    int screen_height = 0;
+
+    SDL_GetCurrentRenderOutputSize(state->renderer, &screen_width, &screen_height);
+
+    if (state->player_x < 0.f) {
+        state->player_x = 0.f;    
+    }
+
+    if (state->player_y < 0.f) {
+        state->player_y = 0.f;
+    }
+
+    if ((state->player_x + state->texture_width) > screen_width) {
+        state->player_x = screen_width - state->texture_width; 
+    }
+
+    if ((state->player_y + state->texture_height) > screen_height) {
+        state->player_y = screen_height - state->texture_height; 
+    }
 
     // player square with image texture
     SDL_FRect rect = { state->player_x, state->player_y, (float)state->texture_width, (float)state->texture_height };
